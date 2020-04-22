@@ -1,0 +1,1 @@
+Старт: uvicorn app:app --reload
