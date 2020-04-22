@@ -6,6 +6,7 @@ from pytorch_model import Net
 import pandas as pd
 import torch
 from torch.autograd import Variable
+from validate import ModelSchema
 
 
 app = FastAPI(title='Test')
@@ -18,7 +19,7 @@ MODEL_MAPPING = {"001": CATBOOST_MODEL, "002": GRADIENT_BOOSTING_CLASSIFIER_MODE
 
 
 
-@app.get(path='/')
+@app.get(path='/', response_description='Test')
 async def get():
     try:
         phrase = 'test42'
@@ -27,9 +28,9 @@ async def get():
     return phrase
 
 
-@app.post(path='/api/predict')
-async def post_predict(body: dict):
-    return predict(body)
+@app.post(path='/api/predict', response_description="Predict about passenger surviving")
+async def post_predict(input: ModelSchema):
+    return predict(input.dict())
 
 
 def prepare_data(input: dict) -> dict:
