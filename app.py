@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, status
 import numpy as np
 from catboost import CatBoostClassifier
 import pickle
@@ -6,11 +6,11 @@ from pytorch_model import create_class_instance
 import pandas as pd
 import torch
 from torch.autograd import Variable
-from validate import ModelSchema
+from validate import ModelSchema, ResponceSchema
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from fastapi import  Request, status
 from fastapi.encoders import jsonable_encoder
+from typing import List
 
 
 app = FastAPI(title='Test')
@@ -32,7 +32,7 @@ async def get():
     return phrase
 
 
-@app.post(path='/api/predict', response_description="Predict about passenger surviving")
+@app.post(path='/api/predict', response_description="Predict about passenger surviving", response_model=List[ResponceSchema])
 async def post_predict(input: ModelSchema):
     return predict(input.dict())
 
@@ -110,15 +110,33 @@ def predict(input: dict) -> list:
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
+def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content=jsonable_encoder({"message": collect_errors(exc.errors())})
     )
 
 
+from starlette.exceptions import HTTPException as StarletteHTTPException
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content=jsonable_encoder({"message": exc.detail})
+    )
+
+
+@app.exception_handler(status.HTTP_500_INTERNAL_SERVER_ERROR)
+def exception_handler_500(request, error):
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content=jsonable_encoder({"message": str(error)})
+    )
+
+
 def collect_errors(errors):
-    err = ''
+    err = []
     for error in errors:
-        err += error['msg']
-    return err
+        err.append(error['loc'][-1])
+        err.append(error['msg'])
+    return ". ".join(err)

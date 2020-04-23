@@ -1,10 +1,17 @@
 from pydantic import BaseModel, validator, Field
-from typing import List
+from typing import List, Optional
+
+
+class ResponceSchema(BaseModel):
+    model_id: str
+    value: Optional[int]
+    result_code: int
+    error: Optional[str]
 
 
 class NestedSchema(BaseModel):
     pclass: int = Field(title="Pclass", description="Cabin Class", ge=1, le=3)
-    name: str = Field(title="Name", description="Passenger name", max_length=100, default="Test")
+    name: str = Field(title="Name", description="Passenger name", max_length=100)
     sex: str = Field(title="Sex", description="Passenger sex")
     sibsp: int = Field(title="SibSp", description="Number of Siblings/Spouses Aboard")
     parch: int = Field(title="Parch", description="Number of Parents/Children Aboard")
