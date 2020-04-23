@@ -22,4 +22,5 @@ class Net(nn.Module):
 
 def create_class_instance():
     model = Net()
-    return model.load_state_dict(torch.load('torch.pth'))
+    model.load_state_dict(torch.load('models/torch.pth'))
+    return model

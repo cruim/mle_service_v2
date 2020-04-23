@@ -2,11 +2,15 @@ from fastapi import FastAPI, HTTPException
 import numpy as np
 from catboost import CatBoostClassifier
 import pickle
-from pytorch_model import Net
+from pytorch_model import create_class_instance
 import pandas as pd
 import torch
 from torch.autograd import Variable
 from validate import ModelSchema
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi import  Request, status
+from fastapi.encoders import jsonable_encoder
 
 
 app = FastAPI(title='Test')
@@ -14,7 +18,7 @@ app = FastAPI(title='Test')
 
 CATBOOST_MODEL = CatBoostClassifier().load_model(fname="models/catboost_model")
 GRADIENT_BOOSTING_CLASSIFIER_MODEL = pickle.load(open("models/gradient_boosting_classifier_model.dat", "rb"))
-PYTORCH_MODEL = Net()
+PYTORCH_MODEL = create_class_instance()
 MODEL_MAPPING = {"001": CATBOOST_MODEL, "002": GRADIENT_BOOSTING_CLASSIFIER_MODEL, "003": PYTORCH_MODEL}
 
 
@@ -93,7 +97,6 @@ def predict(input: dict) -> list:
     for mod in input['models']:
         model = MODEL_MAPPING.get(mod, False)
         if model and mod == '003':
-            model.load_state_dict(torch.load('models/torch.pth'))
             X_test = df.iloc[:, :].values
             with torch.no_grad():
                 t_ = model(Variable(torch.FloatTensor(X_test.astype(int)), requires_grad=False))
@@ -104,3 +107,18 @@ def predict(input: dict) -> list:
         else:
             result.append({"model_id": mod, "error": "Model not found", "result_code": 1})
     return result
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content=jsonable_encoder({"message": collect_errors(exc.errors())})
+    )
+
+
+def collect_errors(errors):
+    err = ''
+    for error in errors:
+        err += error['msg']
+    return err

@@ -4,7 +4,7 @@ from typing import List
 
 class NestedSchema(BaseModel):
     pclass: int = Field(title="Pclass", description="Cabin Class", ge=1, le=3)
-    name: str = Field(title="Name", description="Passenger name", max_length=100)
+    name: str = Field(title="Name", description="Passenger name", max_length=100, default="Test")
     sex: str = Field(title="Sex", description="Passenger sex")
     sibsp: int = Field(title="SibSp", description="Number of Siblings/Spouses Aboard")
     parch: int = Field(title="Parch", description="Number of Parents/Children Aboard")
@@ -23,6 +23,7 @@ class NestedSchema(BaseModel):
         if embarked not in {"S", "Q", "C"}:
             raise ValueError('Valid values for embarked are: S, Q, C.')
         return embarked
+
 
 class ModelSchema(BaseModel):
     models: List = Field(title="Model", description="List of models")
